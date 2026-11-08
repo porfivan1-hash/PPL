@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.exe
+PlyPrismLauncher-2.1.0-Portable/
+PlyPrismLauncher-2.1.0-Portable.zip
+
+# Local OAuth configuration
+config.js

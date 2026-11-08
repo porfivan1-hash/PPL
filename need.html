@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem("theme"))||"oled"}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlyPrismLauncher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark; --deepslate:#000000; --stone:#0d0e0f; --cobble:#1a1c1e; --line:#33373a;
+  --text:#ededed; --muted:#9b9fa3; --grass:#6aa84f; --grass-d:#4d7f38;
+  --lapis:#3a63c8; --dirt:#8a5a34; --danger:#d4553f;
+  --pixel:"Silkscreen","Courier New",monospace; --sans:"IBM Plex Sans",system-ui,sans-serif;
+}
+/* Темы: oled (по умолчанию), mc, neon, pastel */
+:root[data-theme="mc"]{--deepslate:#101a12;--stone:#1a2a1d;--cobble:#294230;--line:#3e5f46;--text:#e9f2e3;--muted:#9fb7a3;--grass:#6fbf4a;--grass-d:#4a8a2f;--dirt:#8a5a34}
+:root[data-theme="neon"]{--deepslate:#07030f;--stone:#12081f;--cobble:#220f3d;--line:#4a2a8c;--text:#f4eaff;--muted:#a897d3;--grass:#00e5ff;--grass-d:#ff2bd6;--lapis:#7a3cff;--dirt:#ff2bd6;--danger:#ff4d6d}
+:root[data-theme="pastel"]{color-scheme:light;--deepslate:#fbf5ea;--stone:#fffcf6;--cobble:#f0e5d3;--line:#d9c9b1;--text:#3a3128;--muted:#7a6b59;--grass:#9bd08a;--grass-d:#6aa659;--lapis:#6f98d6;--dirt:#c98f5e;--danger:#c4472f}
+:root[data-theme="neon"] .btn:hover,:root[data-theme="neon"] .mod:hover{box-shadow:0 0 14px var(--grass)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--deepslate);color:var(--text);font:15px/1.5 var(--sans);min-height:100vh}
+h1,h2,h3{font-family:var(--pixel);font-weight:700;margin:0;letter-spacing:.02em}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--grass);outline-offset:2px}
+.hidden{display:none!important}
+
+/* кнопки в стиле блоков */
+.btn{background:var(--cobble);border:2px solid var(--line);border-bottom-width:4px;padding:8px 14px;border-radius:2px;font-weight:600}
+.btn:hover{background:var(--line)}
+.btn:active{border-bottom-width:2px;transform:translateY(2px)}
+.btn.primary{background:var(--grass);border-color:var(--grass-d);color:#10200a}
+.btn.primary:hover{filter:brightness(1.12)}
+.btn.ms{background:var(--lapis);border-color:#2a4a99;color:#fff}
+.btn.danger{color:var(--danger)}
+.btn.small{padding:4px 10px;font-size:13px}
+input,select{background:var(--deepslate);border:2px solid var(--line);padding:8px 10px;border-radius:2px;width:100%}
+
+/* экран входа */
+#auth{max-width:880px;margin:0 auto;padding:56px 20px}
+#auth h1{font-size:clamp(26px,5vw,40px);margin-bottom:8px}
+#auth>p{color:var(--muted);margin:0 0 32px;max-width:52ch}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.choice{background:var(--stone);border:2px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:12px}
+.choice.offline{border-top:8px solid var(--dirt)}
+.choice.online{border-top:8px solid var(--lapis)}
+.choice p{margin:0;color:var(--muted);font-size:14px}
+.choice h2{font-size:18px}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:4px}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:10px}
+
+/* основное приложение */
+#app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:var(--stone);border-right:2px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:6px}
+aside h1{font-size:16px;margin-bottom:14px}
+.user{background:var(--deepslate);border:2px solid var(--line);padding:10px;margin-bottom:12px;font-size:13px}
+.user b{display:block;font-size:15px}
+.badge{display:inline-block;padding:1px 8px;font-size:12px;border-radius:2px;margin-top:4px}
+.badge.off{background:var(--dirt);color:#fff}.badge.on{background:var(--lapis);color:#fff}
+.tab{background:none;border:0;border-left:4px solid transparent;text-align:left;padding:9px 10px;font-weight:500}
+.tab[aria-selected=true]{border-left-color:var(--grass);background:var(--cobble)}
+main{padding:24px;max-width:1100px;width:100%}
+main h2{font-size:20px;margin-bottom:16px}
+.bar{display:grid;grid-template-columns:2fr 1.4fr auto;gap:10px;margin-bottom:18px}
+.list{display:grid;gap:10px}
+.mod{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;background:var(--stone);border:2px solid var(--line);padding:12px}
+.mod img,.ph{width:56px;height:56px;image-rendering:pixelated;background:var(--cobble);border:2px solid var(--line)}
+.mod h3{font-size:14px;margin-bottom:2px}
+.mod p{margin:0;color:var(--muted);font-size:13.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{font-size:12px;color:var(--muted);margin-top:4px}
+.empty{padding:28px;border:2px dashed var(--line);color:var(--muted);text-align:center}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.panel{background:var(--stone);border:2px solid var(--line);padding:16px;display:grid;gap:10px;align-content:start}
+.packs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:26px}
+.packs .empty{grid-column:1/-1}
+.pack{display:flex;flex-direction:column;justify-content:space-between;gap:12px;padding:14px;border:2px solid var(--line);background:var(--stone)}
+.pack .pic{width:56px;height:56px;font-size:30px}
+.actions{display:grid;gap:8px;max-width:260px}
+.acc{position:relative;margin-bottom:12px}
+.accbtn{width:100%;text-align:left;display:grid;gap:3px;padding:10px 30px 10px 10px;position:relative;background:var(--deepslate);border:2px solid var(--line);font-size:13px}
+.accbtn:hover{border-color:var(--grass)}
+.accbtn b{font-size:15px}
+.accbtn .caret{position:absolute;right:10px;top:10px;color:var(--muted)}
+.accbtn .meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acclist{display:grid;gap:4px;margin-top:6px;padding:6px;background:var(--deepslate);border:2px solid var(--line)}
+.accrow{display:flex;align-items:center;gap:6px}
+.accrow .pick{flex:1;min-width:0;text-align:left;padding:7px 8px;background:none;border:2px solid transparent;line-height:1.7}
+.accrow .pick:hover{background:var(--cobble)}
+.accrow .pick[aria-current=true]{border-color:var(--grass)}
+.accrow .del{padding:4px 8px}
+.btn.big{padding:12px 16px;font-size:16px}
+/* анимации и подсветка */
+.btn{transition:background .15s,transform .08s,box-shadow .2s,border-color .2s,filter .15s}
+.btn:hover{box-shadow:0 0 10px color-mix(in srgb,var(--grass) 45%,transparent)}
+.mod{transition:opacity .4s ease,transform .4s ease,border-color .2s,box-shadow .2s}
+.mod.reveal{opacity:0;transform:translateY(14px)}
+.mod.reveal.in{opacity:1;transform:none}
+.mod:hover{border-color:var(--grass)}
+.pack,.skincard{transition:border-color .2s,transform .15s,background .2s}
+.pack:hover,.skincard:hover{transform:translateY(-2px)}
+section:not(.hidden){animation:fadein .28s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* окна */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.62);display:grid;place-items:center;z-index:20;padding:16px}
+.mbox{background:var(--stone);border:2px solid var(--line);padding:20px;width:min(540px,100%);max-height:86vh;overflow:auto;display:grid;gap:14px;animation:fadein .2s ease}
+.end{justify-content:flex-end}
+.pmrow{display:flex;align-items:center;gap:10px;padding:8px;border:2px solid var(--line);background:var(--deepslate);transition:border-color .2s}
+.pmrow[aria-current=true],.pmrow.need{border-color:var(--grass)}
+.grow{flex:1;min-width:0}
+.chip{display:inline-block;padding:0 6px;border:1px solid var(--line);font-size:11px;color:var(--muted);vertical-align:middle}
+#packQuick{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;min-width:0}
+#packQuick .pic{width:26px;height:26px;font-size:15px}
+#packQuick .qt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+label.check{display:flex;gap:8px;align-items:flex-start;color:var(--text);font-size:14px;margin:4px 0}
+textarea{background:var(--deepslate);border:2px solid var(--line);padding:8px 10px;width:100%;font:inherit;color:inherit;resize:vertical;border-radius:2px}
+.task{display:flex;gap:8px;align-items:center;padding:4px 0}
+.task.done span{text-decoration:line-through;color:var(--muted)}
+/* датчики */
+.mon{font-size:12px;color:var(--muted);display:grid;gap:6px;border-top:2px solid var(--line);padding-top:10px;margin-top:8px}
+.meter{height:6px;background:var(--cobble);margin-top:3px}
+.meter i{display:block;height:100%;width:0;background:var(--grass);transition:width .5s}
+/* 3D-скин */
+#skin3d{width:260px;height:340px;max-width:100%;background:var(--deepslate);border:2px solid var(--line);cursor:grab;touch-action:none}
+#skin3d.drop{border-color:var(--grass)}
+a{color:var(--grass)}
+.plus{color:var(--grass)}
+#tab-skins.locked>:not(h2):not(#skinLock){display:none}
+#tab-skins:not(.locked) #skinLock{display:none}
+.chat{display:grid;gap:10px;margin:10px 0;max-height:52vh;overflow:auto;padding:4px}
+.msg{padding:10px 12px;border:2px solid var(--line);background:var(--stone);max-width:min(700px,100%);white-space:pre-wrap}
+.msg.user{justify-self:end;border-color:var(--grass)}
+.plan{margin-top:8px;padding:8px;background:var(--deepslate);border:2px dashed var(--line);white-space:normal}
+.skinview{width:96px;height:192px;image-rendering:pixelated;background:var(--deepslate);border:2px solid var(--line)}
+.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.skincard{display:grid;gap:6px;justify-items:center;padding:12px 8px;border:2px solid var(--line);background:var(--stone)}
+.skincard:hover{background:var(--cobble)}
+.skincard[aria-current=true]{border-color:var(--grass)}
+.skincard canvas{width:64px;height:128px;image-rendering:pixelated}
+.pack[aria-current=true]{border-color:var(--grass)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row.between{justify-content:space-between;align-items:center}
+.pm{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}
+pre{background:var(--deepslate);border:2px solid var(--line);padding:10px;overflow:auto;max-height:240px;font-size:12px;margin:0}
+#toast{position:fixed;right:16px;bottom:16px;background:var(--grass);color:#10200a;padding:10px 16px;font-weight:600;border:2px solid var(--grass-d)}
+#toast.err{background:var(--danger);color:#fff;border-color:#8c2f20}
+@media (max-width:760px){
+  #app{grid-template-columns:1fr}
+  aside{border-right:0;border-bottom:2px solid var(--line)}
+  .bar{grid-template-columns:1fr}
+  .mod{grid-template-columns:48px 1fr}
+  .mod .btn{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.bar.noload{grid-template-columns:2fr 1fr auto}
+.sub{font-size:13px;color:var(--muted);margin-bottom:10px}
+.pic{width:44px;height:44px;display:grid;place-items:center;font-size:24px;border:2px solid var(--line);object-fit:cover;image-rendering:pixelated;flex:none}
+.icons{display:flex;flex-wrap:wrap;gap:6px}
+.ic{width:40px;height:40px;border:2px solid var(--line);font-size:20px;display:grid;place-items:center;padding:0;object-fit:cover}
+.ic[aria-pressed=true]{border-color:var(--grass);outline:2px solid var(--grass)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg .btn[aria-pressed=true]{background:var(--grass);border-color:var(--grass-d);color:#10200a}
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:grid;place-items:center;z-index:10}
+#overlay .box{background:var(--stone);border:2px solid var(--line);padding:24px;width:min(440px,90vw);display:grid;gap:12px}
+#overlay h3{font-size:14px}
+progress{width:100%;height:14px;accent-color:var(--grass)}
+.mod .btn[disabled]{opacity:.5}
+</style>
+</head>
+<body>
+
+<!-- ───── Экран создания аккаунта ───── -->
+<section id="auth" class="hidden">
+  <h1>PlyPrismLauncher</h1>
+  <p>Создайте аккаунт и выберите, как вы будете играть. Аккаунтов можно добавить несколько и переключаться между ними в меню слева.</p>
+  <button type="button" class="btn small hidden" id="btnAuthCancel" style="margin:-16px 0 24px">← Назад к аккаунтам</button>
+  <div class="choices">
+    <div class="choice offline">
+      <h2>Офлайн</h2>
+      <p>Для серверов без лицензии. Ник берётся из вашего Google-аккаунта.</p>
+      <button class="btn primary" id="btnGoogle">Войти через Google</button>
+      <div class="note">Откроется страница accounts.google.com в вашем браузере. Пароль лаунчер не видит и не сохраняет.</div>
+    </div>
+    <div class="choice online">
+      <h2>Онлайн</h2>
+      <p>Лицензионный аккаунт Minecraft. Вход через Microsoft: скин, мультиплеер и серверы с проверкой лицензии.</p>
+      <button class="btn ms" id="btnMs">Войти через Microsoft</button>
+      <div class="note">В Electron вход делается в главном процессе (например, библиотека <b>msmc</b>). В тесте вход имитируется.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ───── Основное приложение ───── -->
+<div id="app" class="hidden">
+  <aside>
+    <h1>PlyPrismLauncher<span id="plusMark" class="plus"></span> <span class="chip">v2.1</span></h1>
+    <div class="acc">
+      <button type="button" class="accbtn" id="accBtn" aria-expanded="false" aria-controls="accList" aria-label="Список аккаунтов">
+        <span><b id="uName">—</b></span>
+        <span><span id="uBadge" class="badge"></span></span>
+        <span class="meta" id="uUuid"></span>
+        <span class="caret" aria-hidden="true">▾</span>
+      </button>
+      <div id="accList" class="acclist hidden"></div>
+    </div>
+    <div role="tablist" aria-label="Разделы" style="display:grid;gap:4px">
+      <button class="tab" role="tab" data-tab="mod" aria-selected="true">Моды</button>
+      <button class="tab" role="tab" data-tab="shader" aria-selected="false">Шейдеры</button>
+      <button class="tab" role="tab" data-tab="resourcepack" aria-selected="false">Ресурспаки</button>
+      <button class="tab" role="tab" data-tab="packs" aria-selected="false">Сборки</button>
+      <button class="tab" role="tab" data-tab="ai" aria-selected="false">ИИ</button>
+      <button class="tab" role="tab" data-tab="friends" aria-selected="false">Друзья</button>
+      <button class="tab" role="tab" data-tab="skins" aria-selected="false">Скин</button>
+      <button class="tab" role="tab" data-tab="settings" aria-selected="false">Настройки</button>
+    </div>
+    <div style="flex:1"></div>
+    <div class="mon" id="mon" aria-label="Нагрузка на систему">
+      <div>ЦП <b id="monCpu">–</b><div class="meter"><i id="monCpuBar"></i></div></div>
+      <div>ОЗУ <b id="monRam">–</b><div class="meter"><i id="monRamBar"></i></div></div>
+      <div id="monGame">Игра не запущена</div>
+    </div>
+    <label for="themeSel" style="margin-top:10px">Тема</label>
+    <select id="themeSel">
+      <option value="oled">Чистый OLED-чёрный</option>
+      <option value="mc">Классический зелёный</option>
+      <option value="neon">Неоновый киберпанк</option>
+      <option value="pastel">Ванильный пастельный</option>
+    </select>
+  </aside>
+
+  <main>
+    <!-- Моды / шейдеры / ресурспаки -->
+    <section id="tab-browse">
+      <h2 id="browseTitle">Моды</h2>
+      <div class="bar" id="bar">
+        <input id="q" type="search" placeholder="Поиск" aria-label="Поиск">
+        <button type="button" class="btn" id="packQuick" aria-haspopup="dialog" aria-label="Выбрать сборку">Сборка</button>
+        <button class="btn primary" id="btnSearch">Найти</button>
+      </div>
+      <div class="meta" id="activeInfo" style="margin-bottom:10px"></div>
+      <h3 id="listTitle" class="sub"></h3>
+      <div id="results" class="list"></div>
+    </section>
+
+    <!-- ИИ -->
+    <section id="tab-ai" class="hidden">
+      <h2>ИИ-помощник</h2>
+      <div class="meta" id="aiQuota"></div>
+      <div id="aiLog" class="chat" aria-live="polite"></div>
+      <div class="row">
+        <textarea id="aiIn" rows="2" placeholder="Например: сборка для выживания на 1.20.1 с оптимизацией и красивой графикой" aria-label="Запрос к ИИ" style="flex:1;min-width:200px"></textarea>
+        <button type="button" class="btn primary" id="aiSend">Отправить</button>
+      </div>
+    </section>
+
+    <!-- Друзья -->
+    <section id="tab-friends" class="hidden">
+      <h2>Друзья</h2>
+      <div class="panel">
+        <div class="row">
+          <input id="frName" placeholder="Ник игрока" maxlength="16" style="flex:1;min-width:140px" aria-label="Ник друга">
+          <input id="frNote" placeholder="Заметка (необязательно)" maxlength="60" style="flex:1;min-width:140px" aria-label="Заметка о друге">
+          <button type="button" class="btn primary" id="frAdd">Добавить</button>
+        </div>
+        <div class="note">Добавление по Ctrl+P прямо в игре появится вместе с модом-компаньоном. Пока ники добавляются вручную. Список свой у каждого аккаунта.</div>
+      </div>
+      <div id="frList" class="list" style="margin-top:14px"></div>
+    </section>
+
+    <!-- Настройки -->
+    <section id="tab-settings" class="hidden">
+      <h2>Настройки</h2>
+      <div class="two">
+        <div class="panel" id="plusPanel">
+          <h3>PlyPrismLauncher+</h3>
+          <div class="note" id="plusState">Не активна. Введите код ниже.</div>
+          <div class="meta">В подписке: ИИ с большим числом сообщений, скины и плащи, режим «Полная яркость».</div>
+          <div><label for="plusCode">Код активации</label><input id="plusCode" placeholder="12345-123456-12345678" autocomplete="off"></div>
+          <button type="button" class="btn primary" id="btnPlusActivate">Активировать</button>
+          <div class="meta">Подписка бесплатная. Коды публикуются в Telegram: <a href="https://t.me/clevi01" target="_blank" rel="noopener">t.me/clevi01</a></div>
+        </div>
+        <div class="panel">
+          <h3>Ключ Claude API для ИИ</h3>
+          <div class="note">Нужен для вкладки «ИИ». Хранится на этом компьютере в зашифрованном виде.</div>
+          <input id="aiKey" type="password" placeholder="sk-ant-…" autocomplete="off" aria-label="Ключ Claude API">
+          <button type="button" class="btn small" id="btnAiKey">Сохранить ключ</button>
+        </div>
+        <div class="panel">
+          <h3>Java</h3>
+          <div class="note" id="javaReq">Выберите сборку, чтобы узнать нужную версию Java.</div>
+          <div id="javaList" class="list"></div>
+          <button type="button" class="btn small" id="btnJavaRefresh">Обновить список</button>
+        </div>
+        <div class="panel">
+          <h3>Очистка мусора</h3>
+          <div><label for="cleanPack">Сборка</label><select id="cleanPack"></select></div>
+          <button type="button" class="btn small" id="btnCleanScan">Проверить, что можно удалить</button>
+          <div id="cleanList"></div>
+          <button type="button" class="btn primary hidden" id="btnCleanRun">Очистить выбранное</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Скин -->
+    <section id="tab-skins" class="hidden">
+      <h2>Скин</h2>
+      <div id="skinLock" class="panel">
+        <h3>Скины в PlyPrismLauncher+</h3>
+        <p style="margin:0;color:var(--muted)">Скины и плащи доступны только в PlyPrismLauncher+. Подписка бесплатная: код выкладывается в Telegram.</p>
+        <div class="row"><button type="button" class="btn primary" id="btnSkinLock">Ввести код</button>
+          <a href="https://t.me/clevi01" target="_blank" rel="noopener">Получить код: t.me/clevi01</a></div>
+      </div>
+      <div class="two">
+        <div class="panel">
+          <h3>Ваш скин</h3>
+          <canvas id="skin3d" width="260" height="340" aria-label="3D-просмотр скина: перетащите мышью, чтобы покрутить"></canvas>
+          <label class="check"><input type="checkbox" id="skinAuto"> Вращать автоматически</label>
+          <div><b id="skinName">Не выбран</b><div class="meta" id="skinInfo"></div></div>
+          <div class="note" id="skinNote"></div>
+          <div id="capeBox" class="hidden" style="display:grid;gap:8px">
+            <label>Плащ</label>
+            <div id="capeList" class="seg"></div>
+            <button type="button" class="btn small ms" id="btnCapeApply">Применить плащ к аккаунту</button>
+          </div>
+          <div class="row">
+            <button class="btn small ms hidden" id="btnSkinUpload">Применить к аккаунту Microsoft</button>
+            <button class="btn small danger hidden" id="btnSkinReset">Сбросить скин</button>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Импорт из файла</h3>
+          <input id="skinFile" type="file" accept="image/png" class="hidden">
+          <div><label for="skinModel">Модель рук</label>
+            <select id="skinModel"><option value="classic">Классическая (руки 4 px)</option><option value="slim">Тонкие (руки 3 px)</option></select></div>
+          <button class="btn primary" id="btnSkinImport">Загрузить .png одним кликом</button>
+          <div class="meta">Или перетащите файл прямо на 3D-модель. Подходит PNG 64×64 или 64×32, модель рук определится сама.</div>
+        </div>
+      </div>
+      <h3 class="sub" style="margin-top:24px">Готовые скины Minecraft</h3>
+      <div id="skinGrid" class="skins"></div>
+    </section>
+
+    <!-- Сборки -->
+    <section id="tab-packs" class="hidden">
+      <h2>Сборки</h2>
+      <h3 class="sub" id="packsHeading">Мои сборки</h3>
+      <div id="packList" class="packs"></div>
+      <div class="two">
+        <div class="panel">
+          <h3>Новая сборка</h3>
+          <div><label for="pName">Название</label><input id="pName" placeholder="Моя сборка"></div>
+          <div class="seg" id="srcSeg" role="group" aria-label="Тип сборки">
+            <button type="button" class="btn small" data-src="empty" aria-pressed="true">Без модов</button>
+            <button type="button" class="btn small" data-src="modrinth" aria-pressed="false">Готовая с Modrinth</button>
+          </div>
+          <div id="srcEmpty" class="panel" style="padding:0;border:0;background:none">
+            <div><label for="pVer">Версия Minecraft</label><select id="pVer"></select></div>
+            <div><label for="pLoader">Загрузчик</label>
+              <select id="pLoader">
+                <option value="vanilla">Без загрузчика (чистый Minecraft)</option>
+                <option value="fabric">Fabric</option><option value="quilt">Quilt</option>
+                <option value="forge">Forge</option>
+                <option value="neoforge">NeoForge</option>
+              </select></div>
+          </div>
+          <div id="srcMr" class="hidden" style="display:grid;gap:8px">
+            <div class="row"><input id="mpQ" type="search" placeholder="Название сборки на Modrinth" aria-label="Поиск готовых сборок" style="flex:1;min-width:140px">
+              <button type="button" class="btn small primary" id="btnMpSearch">Найти</button></div>
+            <div id="mpResults" class="list"></div>
+            <div class="meta" id="mpPicked">Сборка не выбрана</div>
+          </div>
+          <div><label>Иконка</label>
+            <div id="iconPick" class="icons"></div>
+            <label for="iconFile" style="margin-top:8px">Или своя картинка</label>
+            <input id="iconFile" type="file" accept="image/*">
+          </div>
+          <button class="btn primary" id="btnCreate">Создать сборку</button>
+        </div>
+        <div class="panel" id="packDetail">
+          <div class="row" style="align-items:center"><span id="packIcon"></span><h3 id="packTitle">Выберите сборку</h3></div>
+          <div class="actions" id="packActions"></div>
+          <div id="packMods" class="hidden"></div>
+          <div id="notesBox" class="hidden" style="display:grid;gap:8px">
+            <h3>Заметки</h3>
+            <textarea id="packNote" rows="4" placeholder="Что хотите сделать с этой сборкой…" aria-label="Заметки к сборке"></textarea>
+            <h3>Задачи</h3>
+            <div class="row"><input id="taskIn" placeholder="Например: установить квесты" style="flex:1;min-width:140px" aria-label="Новая задача"><button type="button" class="btn small" id="taskAdd">Добавить</button></div>
+            <div id="taskList"></div>
+          </div>
+          <div id="gsBox" class="hidden" style="display:grid;gap:8px">
+            <h3>Игровые настройки</h3>
+            <label class="check"><input type="checkbox" id="gsRdOn"> Задать дальность прорисовки при запуске</label>
+            <div class="row" style="align-items:center"><input type="range" id="gsRd" min="2" max="32" value="12" style="flex:1" aria-label="Дальность прорисовки"><b id="gsRdVal">12</b><span class="meta">чанков</span></div>
+            <label class="check"><input type="checkbox" id="gsFb"> <span>Полная яркость (fullbright) <span class="chip" id="gsFbTag">🔒 PlyPrismLauncher+</span></span></label>
+            <div class="meta">Настройки записываются в options.txt при запуске игры, заходить в настройки Minecraft не нужно. Полная яркость работает через настройку яркости: на новых версиях (1.19.4+) игра может её сбросить.</div>
+          </div>
+          <pre id="packJson" class="hidden"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="packModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+  <div class="mbox">
+    <div class="row between"><h3 id="pmTitle">Выберите сборку</h3><button type="button" class="btn small" id="pmClose" aria-label="Закрыть">✕</button></div>
+    <div id="pmList" class="list"></div>
+    <div class="row end"><button type="button" class="btn small" id="pmNew">+ Новая сборка</button></div>
+  </div>
+</div>
+<div id="dlg" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <div class="mbox">
+    <h3 id="dlgTitle"></h3>
+    <div id="dlgBody"></div>
+    <div class="row end"><button type="button" class="btn small" id="dlgNo">Отмена</button><button type="button" class="btn small primary" id="dlgYes">Да</button></div>
+  </div>
+</div>
+<div id="overlay" class="hidden" role="alertdialog" aria-live="polite" aria-label="Подготовка игры">
+  <div class="box">
+    <h3 id="ovStage">Подготовка…</h3>
+    <progress id="ovBar" max="100"></progress>
+    <div class="meta" id="ovText"></div>
+  </div>
+</div>
+<div id="toast" class="hidden" role="status"></div>
+
+<script>
+const API = "https://api.modrinth.com/v2";
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d } catch { return d } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)) } catch {} }
+};
+let account = store.get("account", null);
+let packs   = store.get("packs", []);
+let activeId = store.get("activePack", null);
+let accounts = store.get("accounts", []);
+if (account && !accounts.some(a => a.type === account.type && a.uuid === account.uuid)){ accounts.push(account); store.set("accounts", accounts) }
+let adding = false;
+
+function toast(msg, err){
+  const t = $("#toast"); t.textContent = msg; t.className = err ? "err" : "";
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add("hidden"), 3200);
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = n => n >= 1e6 ? (n/1e6).toFixed(1)+" млн" : n >= 1e3 ? (n/1e3).toFixed(1)+" тыс." : String(n);
+
+/* ───── Аккаунты ───── */
+// UUID для офлайн-ника (в реальном лаунчере: MD5 от "OfflinePlayer:"+ник, UUID v3)
+function offlineUuid(name){
+  let h = 2166136261 >>> 0, out = "";
+  for (let i = 0; i < 32; i++){
+    for (const c of name + i){ h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0 }
+    out += (h & 15).toString(16);
+  }
+  return `${out.slice(0,8)}-${out.slice(8,12)}-3${out.slice(13,16)}-a${out.slice(17,20)}-${out.slice(20,32)}`;
+}
+function setAccount(a){
+  const i = accounts.findIndex(x => x.type === a.type && x.uuid === a.uuid);
+  if (i >= 0) accounts[i] = a; else accounts.push(a);
+  account = a; adding = false;
+  store.set("accounts", accounts); store.set("account", a); render();
+}
+
+$("#btnGoogle").onclick = async () => {
+  const btn = $("#btnGoogle");
+  btn.disabled = true;
+  try {
+    if (window.launcher?.loginGoogle){
+      toast("Завершите вход в открывшемся браузере");
+      const g = await window.launcher.loginGoogle(); // { name, uuid, email }
+      setAccount({ type: "offline", name: g.name, uuid: g.uuid, email: g.email, developer: !!g.developer });
+      refreshPlus();
+    } else {
+      // Запуск не в Electron (просто открыли файл в браузере): имитация
+      setAccount({ type: "offline", name: "TestGoogleUser", uuid: offlineUuid("TestGoogleUser") });
+      toast("Тест: вход Google имитирован");
+    }
+  } catch (e){
+    toast(String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""), true);
+  }
+  btn.disabled = false;
+};
+$("#btnMs").onclick = async () => {
+  try {
+    // В Electron: const p = await window.launcher.loginMicrosoft();  // { name, uuid, accessToken }
+    if (window.launcher?.loginMicrosoft){
+      const p = await window.launcher.loginMicrosoft();
+      return setAccount({ type: "online", name: p.name, uuid: p.uuid });
+    }
+    setAccount({ type: "online", name: "TestMicrosoftUser", uuid: "00000000-0000-4000-8000-000000000001" });
+    toast("Тест: вход Microsoft имитирован");
+  } catch (e){ toast("Ошибка входа: " + e.message, true) }
+};
+$("#btnAuthCancel").onclick = () => { adding = false; render() };
+function closeAccList(){ $("#accList").classList.add("hidden"); $("#accBtn").setAttribute("aria-expanded", "false") }
+$("#accBtn").onclick = () => {
+  const open = $("#accList").classList.toggle("hidden") === false;
+  $("#accBtn").setAttribute("aria-expanded", String(open));
+};
+const sameAcc = (a, b) => a && b && a.type === b.type && a.uuid === b.uuid;
+function renderAccounts(){
+  $("#accList").innerHTML = accounts.map((a, i) => `
+    <div class="accrow">
+      <button type="button" class="pick" data-acc="${i}" aria-current="${sameAcc(a, account)}">
+        <b>${esc(a.name)}</b><br><span class="badge ${a.type === "online" ? "on" : "off"}">${a.type === "online" ? "Онлайн · Microsoft" : "Офлайн · Google"}${a.developer ? " · Разработчик" : ""}</span></button>
+      <button type="button" class="btn small danger del" data-del-acc="${i}" aria-label="Убрать аккаунт ${esc(a.name)}">✕</button>
+    </div>`).join("") + `<button type="button" class="btn small" id="btnAddAcc">+ Добавить аккаунт</button>`;
+}
+$("#accList").onclick = e => {
+  const pick = e.target.closest("[data-acc]"), del = e.target.closest("[data-del-acc]");
+  if (pick){
+    account = accounts[+pick.dataset.acc]; store.set("account", account);
+    closeAccList(); render(); toast(`Аккаунт: ${account.name}`);
+  } else if (del){
+    const i = +del.dataset.delAcc, a = accounts[i];
+    if (!confirm(`Убрать аккаунт «${a.name}» из лаунчера?`)) return;
+    accounts.splice(i, 1); store.set("accounts", accounts);
+    if (sameAcc(a, account)){ account = accounts[0] || null; store.set("account", account); closeAccList() }
+    render();
+  } else if (e.target.id === "btnAddAcc"){
+    adding = true; closeAccList(); render();
+  }
+};
+
+/* ───── Общие данные ───── */
+const clean = m => String(m).replace(/^Error invoking remote method '[^']+': (Error: )?/, "");
+const TITLES = { mod: "Моды", shader: "Шейдеры", resourcepack: "Ресурспаки" };
+const TYPE_NAME = { mod: "мод", shader: "шейдер", resourcepack: "ресурспак" };
+const LOADERS = { vanilla: "без загрузчика", fabric: "Fabric", quilt: "Quilt", forge: "Forge", neoforge: "NeoForge" };
+const EMOJI = ["⛏️", "🗡️", "🌲", "💎", "🔥", "🧪", "🏰", "🐉"];
+const PAL = ["#4d7f38", "#3a63c8", "#8a5a34", "#a33b3b", "#6b4fa3", "#2f7f86", "#b08a2a", "#555d63"];
+let tab = "mod", showMods = false, src = "empty", mpPick = null, iconSel = { t: "e", v: EMOJI[0] };
+
+const activePack = () => packs.find(p => p.id === activeId);
+// Сборки привязаны к имени аккаунта: у каждого ника свой список и своя выбранная сборка
+const accKey = () => account ? String(account.name).toLowerCase() : "none";
+function loadPacks(){
+  const k = "packs:" + accKey();
+  let list = store.get(k, null);
+  if (list === null){
+    const legacy = store.get("packs", null); // сборки из прошлой версии достаются текущему аккаунту один раз
+    if (legacy && !store.get("packsMigrated", false)){
+      list = legacy; store.set("packsMigrated", true);
+      store.set(k, list); store.set("activePack:" + accKey(), store.get("activePack", null));
+    } else list = [];
+  }
+  packs = list;
+  activeId = store.get("activePack:" + accKey(), null);
+  if (!packs.some(p => p.id === activeId)) activeId = packs[0]?.id || null;
+}
+function savePacks(){ store.set("packs:" + accKey(), packs); store.set("activePack:" + accKey(), activeId) }
+
+function iconHtml(ic){
+  if (ic?.t === "i") return `<img class="pic" src="${esc(ic.v)}" alt="">`;
+  const i = Math.max(0, EMOJI.indexOf(ic?.v));
+  return `<div class="pic" style="background:${PAL[i]}">${esc(ic?.v || EMOJI[0])}</div>`;
+}
+
+/* ───── Вкладки ───── */
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => openTab(b.dataset.tab));
+
+function openTab(t){
+  tab = t;
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x.dataset.tab === t));
+  const others = ["packs", "skins", "settings", "ai", "friends"];
+  for (const id of others) $("#tab-" + id).classList.toggle("hidden", t !== id);
+  $("#tab-browse").classList.toggle("hidden", others.includes(t));
+  if (t === "packs") return renderPacks();
+  if (t === "skins") return renderSkins();
+  if (t === "settings") return renderSettings();
+  if (t === "ai") return renderAi();
+  if (t === "friends") return renderFriends();
+  $("#browseTitle").textContent = TITLES[t];
+  fillPackSelect();
+  $("#q").placeholder = t === "mod" ? "Поиск: sodium, jei, create…" : t === "shader" ? "Поиск: complementary, bsl…" : "Поиск: faithful, bare bones…";
+  $("#q").value = "";
+  updateActiveInfo();
+  search();
+}
+
+/* ───── Версии Minecraft ───── */
+async function loadVersions(){
+  const fill = (list) => { $("#pVer").innerHTML = list.map(v => `<option>${esc(v)}</option>`).join("") };
+  // Сначала показываем список по умолчанию — интерфейс не должен ждать интернет
+  fill(["1.21.1","1.20.4","1.20.1","1.19.2","1.18.2","1.16.5"]);
+  try {
+    const all = await (await fetch(API + "/tag/game_version")).json();
+    const list = all.filter(v => v.version_type === "release").map(v => v.version);
+    if (list.length) fill(list);
+  } catch {}
+}
+
+/* ───── Поиск: моды, шейдеры, ресурспаки ───── */
+async function search(){
+  const q = $("#q").value.trim();
+  const p = activePack();
+  if (p && tab === "mod" && p.loader === "vanilla"){
+    $("#listTitle").textContent = "";
+    return $("#results").innerHTML = `<div class="empty">В сборке «${esc(p.name)}» нет загрузчика, моды в неё добавить нельзя. Выберите сборку с Fabric или Quilt.</div>`;
+  }
+  const facets = [[`project_type:${tab}`]];
+  if (p) facets.push([`versions:${p.mc}`]);
+  if (p && tab === "mod") facets.push([`categories:${p.loader}`]);
+  const url = `${API}/search?query=${encodeURIComponent(q)}&index=${q ? "relevance" : "downloads"}&limit=20&facets=${encodeURIComponent(JSON.stringify(facets))}`;
+  $("#listTitle").textContent = q ? "Результаты поиска" : "Рекомендуемые: самые популярные";
+  const box = $("#results"); box.innerHTML = `<div class="empty">Загружаем…</div>`;
+  const myTab = tab;
+  try {
+    const r = await fetch(url); if (!r.ok) throw new Error("HTTP " + r.status);
+    const { hits } = await r.json();
+    if (myTab !== tab) return;
+    if (!hits.length) return box.innerHTML = `<div class="empty">Ничего не найдено. Измените запрос или версию.</div>`;
+    box.innerHTML = hits.map(h => `
+      <article class="mod">
+        ${h.icon_url ? `<img src="${esc(h.icon_url)}" alt="" loading="lazy">` : `<div class="ph"></div>`}
+        <div><h3>${esc(h.title)}</h3><p>${esc(h.description)}</p>
+          <div class="meta">${esc(h.author)} · скачиваний: ${fmt(h.downloads)}</div></div>
+        <button class="btn small primary" data-add="${esc(h.project_id)}" data-title="${esc(h.title)}" data-icon="${esc(h.icon_url || "")}">В сборку</button>
+      </article>`).join("");
+  } catch (e){ box.innerHTML = `<div class="empty">Не удалось связаться с Modrinth: ${esc(e.message)}. Проверьте интернет.</div>` }
+}
+$("#btnSearch").onclick = search;
+$("#q").onkeydown = e => { if (e.key === "Enter") search() };
+function fillPackSelect(){
+  if (!activePack() && packs.length){ activeId = packs[0].id; savePacks() }
+  updateQuickBtn();
+}
+$("#results").onclick = e => { const b = e.target.closest("[data-add]"); if (b) addToPack(b) };
+
+async function fetchVersions(p, id, type){
+  let q = `game_versions=${encodeURIComponent(JSON.stringify([p.mc]))}`;
+  if (type === "mod") q += `&loaders=${encodeURIComponent(JSON.stringify([p.loader]))}`;
+  const r = await fetch(`${API}/project/${id}/version?${q}`);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+async function depIds(v, kind){
+  const ds = (v.dependencies || []).filter(d => d.dependency_type === kind);
+  const ids = new Set(ds.map(d => d.project_id).filter(Boolean));
+  const vids = ds.filter(d => !d.project_id && d.version_id).map(d => d.version_id);
+  if (vids.length){
+    try { (await (await fetch(`${API}/versions?ids=${encodeURIComponent(JSON.stringify(vids))}`)).json()).forEach(x => ids.add(x.project_id)) } catch {}
+  }
+  return [...ids];
+}
+async function toItem(type, id, title, icon, v){
+  const f = v.files.find(x => x.primary) || v.files[0];
+  return { type, projectId: id, title, icon, version: v.version_number, file: f.filename, url: f.url, sha1: f.hashes?.sha1,
+    deps: await depIds(v, "required"), incompat: await depIds(v, "incompatible") };
+}
+function findConflicts(p, item){
+  const out = [];
+  for (const m of p.mods){
+    if ((item.incompat || []).includes(m.projectId)) out.push(`«${item.title}» несовместим с «${m.title}»`);
+    else if ((m.incompat || []).includes(item.projectId)) out.push(`«${m.title}» (уже в сборке) несовместим с «${item.title}»`);
+  }
+  return out;
+}
+// Ищет обязательные моды, которых нет в сборке (до 3 уровней вглубь)
+async function missingDeps(p, root){
+  const have = new Set(p.mods.map(m => m.projectId)), seen = new Set([root.projectId]);
+  const found = [], unavailable = [];
+  let queue = [...root.deps], depth = 0;
+  while (queue.length && depth < 3){
+    const ids = [...new Set(queue)].filter(id => !have.has(id) && !seen.has(id));
+    ids.forEach(id => seen.add(id)); queue = [];
+    if (!ids.length) break;
+    let infos = [];
+    try { infos = await (await fetch(`${API}/projects?ids=${encodeURIComponent(JSON.stringify(ids))}`)).json() } catch {}
+    const info = Object.fromEntries(infos.map(i => [i.id, i]));
+    for (const id of ids){
+      const i = info[id], title = i?.title || id;
+      if (i && !["mod", "shader", "resourcepack"].includes(i.project_type)) continue;
+      const type = i?.project_type || "mod";
+      try {
+        const vs = await fetchVersions(p, id, type);
+        if (!vs.length){ unavailable.push(title); continue }
+        const item = await toItem(type, id, title, i?.icon_url || "", vs[0]);
+        found.push(item); queue.push(...item.deps);
+      } catch { unavailable.push(title) }
+    }
+    depth++;
+  }
+  return { found, unavailable };
+}
+async function addToPack(btn){
+  const p = activePack();
+  if (!p) return toast("Сначала создайте и выберите сборку во вкладке «Сборки»", true);
+  const type = tab;
+  if (type === "mod" && p.loader === "vanilla") return toast("В сборке без загрузчика моды не работают. Создайте сборку с Fabric, Quilt, Forge или NeoForge.", true);
+  const id = btn.dataset.add;
+  if (p.mods.some(m => m.projectId === id)) return toast("Это уже есть в сборке", true);
+  btn.disabled = true;
+  try {
+    const vs = await fetchVersions(p, id, type);
+    if (!vs.length) throw new Error(`нет версии для ${p.mc}${type === "mod" ? " / " + LOADERS[p.loader] : ""}`);
+    const item = await toItem(type, id, btn.dataset.title, btn.dataset.icon, vs[0]);
+
+    const conflicts = findConflicts(p, item);
+    if (conflicts.length){
+      const ok = await askModal({ title: "Возможный конфликт модов",
+        body: `<p>Авторы указали, что эти моды не работают вместе:</p><ul>${conflicts.map(c => `<li>${esc(c)}</li>`).join("")}</ul>`,
+        ok: "Всё равно добавить", cancel: "Не добавлять" });
+      if (!ok){ btn.disabled = false; return }
+    }
+    p.mods.push(item); savePacks();
+    let msg = `«${item.title}» добавлен в «${p.name}»`;
+
+    if (type === "mod"){
+      const { found, unavailable } = await missingDeps(p, item);
+      if (found.length || unavailable.length){
+        const body = `<p>Для «${esc(item.title)}» нужны дополнительные моды:</p>`
+          + found.map((d, i) => `<label class="check"><input type="checkbox" checked data-dep="${i}"> <span><b>${esc(d.title)}</b> <span class="meta">${esc(d.version)}</span></span></label>`).join("")
+          + (unavailable.length ? `<p class="meta">Нет версии для ${esc(p.mc)} / ${LOADERS[p.loader]}: ${unavailable.map(esc).join(", ")}. Их придётся найти вручную.</p>` : "");
+        const ok = found.length
+          ? await askModal({ title: "Нужные зависимости", body, ok: "Добавить выбранные", cancel: "Пропустить" })
+          : (await askModal({ title: "Нужные зависимости", body, ok: "Понятно", cancel: "" }), false);
+        if (ok){
+          const picked = [...$("#dlgBody").querySelectorAll("[data-dep]:checked")].map(x => found[+x.dataset.dep]);
+          picked.forEach(d => { if (!p.mods.some(m => m.projectId === d.projectId)) p.mods.push(d) });
+          savePacks();
+          if (picked.length) msg += `. Зависимости: ${picked.length}`;
+        }
+      }
+    }
+    toast(msg);
+  } catch (e){ toast("Не удалось добавить: " + e.message, true) }
+  btn.disabled = false;
+}
+
+function updateActiveInfo(){
+  const p = activePack();
+  $("#activeInfo").textContent = p
+    ? `Добавляется в «${p.name}»: Minecraft ${p.mc}, ${LOADERS[p.loader]}.`
+    : "Сборок пока нет. Создайте сборку во вкладке «Сборки», тогда можно будет добавлять в неё файлы.";
+}
+
+/* ───── Создание сборки ───── */
+function buildIconPicker(){
+  $("#iconPick").innerHTML = EMOJI.map((e, i) =>
+    `<button type="button" class="ic" data-i="${i}" aria-pressed="${iconSel.t === "e" && iconSel.v === e}" aria-label="Иконка ${e}" style="background:${PAL[i]}">${e}</button>`).join("")
+    + (iconSel.t === "i" ? `<img class="ic" src="${esc(iconSel.v)}" alt="Выбранная иконка" aria-pressed="true">` : "");
+}
+$("#iconPick").onclick = e => {
+  const b = e.target.closest("[data-i]"); if (!b) return;
+  iconSel = { t: "e", v: EMOJI[+b.dataset.i] }; buildIconPicker();
+};
+$("#iconFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image(), url = URL.createObjectURL(f);
+  img.onload = () => {
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    c.getContext("2d").drawImage(img, 0, 0, 64, 64);
+    iconSel = { t: "i", v: c.toDataURL("image/png") }; URL.revokeObjectURL(url); buildIconPicker();
+  };
+  img.onerror = () => toast("Не удалось открыть картинку", true);
+  img.src = url;
+};
+
+$("#srcSeg").onclick = e => {
+  const b = e.target.closest("[data-src]"); if (!b) return;
+  src = b.dataset.src;
+  document.querySelectorAll("#srcSeg .btn").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $("#srcEmpty").classList.toggle("hidden", src !== "empty");
+  $("#srcMr").classList.toggle("hidden", src !== "modrinth");
+  if (src === "modrinth" && !$("#mpResults").children.length) mpSearch();
+};
+
+async function mpSearch(){
+  const q = $("#mpQ").value.trim(), box = $("#mpResults");
+  box.innerHTML = `<div class="empty">Ищем…</div>`;
+  const facets = [["project_type:modpack"]];
+  try {
+    const r = await fetch(`${API}/search?query=${encodeURIComponent(q)}&index=${q ? "relevance" : "downloads"}&limit=8&facets=${encodeURIComponent(JSON.stringify(facets))}`);
+    const { hits } = await r.json();
+    box.innerHTML = hits.length ? hits.map(h => `
+      <article class="mod">
+        ${h.icon_url ? `<img src="${esc(h.icon_url)}" alt="" loading="lazy">` : `<div class="ph"></div>`}
+        <div><h3>${esc(h.title)}</h3><p>${esc(h.description)}</p></div>
+        <button type="button" class="btn small" data-pick="${esc(h.project_id)}" data-title="${esc(h.title)}" data-icon="${esc(h.icon_url || "")}">Выбрать</button>
+      </article>`).join("") : `<div class="empty">Ничего не найдено</div>`;
+  } catch (e){ box.innerHTML = `<div class="empty">Не удалось связаться с Modrinth: ${esc(e.message)}</div>` }
+}
+$("#btnMpSearch").onclick = mpSearch;
+$("#mpQ").onkeydown = e => { if (e.key === "Enter"){ e.preventDefault(); mpSearch() } };
+$("#mpResults").onclick = async e => {
+  const b = e.target.closest("[data-pick]"); if (!b) return;
+  b.disabled = true;
+  try {
+    const vs = await (await fetch(`${API}/project/${b.dataset.pick}/version`)).json();
+    const v = vs[0]; if (!v) throw new Error("у сборки нет версий");
+    const f = v.files.find(x => x.primary) || v.files[0];
+    const loader = v.loaders.find(l => LOADERS[l] && l !== "vanilla") || "fabric";
+    mpPick = { title: b.dataset.title, url: f.url, sha1: f.hashes?.sha1, version: v.version_number, mc: v.game_versions[v.game_versions.length - 1], loader };
+    $("#mpPicked").textContent = `Выбрано: ${mpPick.title} ${mpPick.version} (${mpPick.mc}, ${LOADERS[loader]})`;
+    if (!$("#pName").value.trim()) $("#pName").value = mpPick.title;
+    if (b.dataset.icon){ iconSel = { t: "i", v: b.dataset.icon }; buildIconPicker() }
+  } catch (err){ toast("Не удалось выбрать: " + err.message, true) }
+  b.disabled = false;
+};
+
+$("#btnCreate").onclick = () => {
+  const name = $("#pName").value.trim();
+  if (!name) return toast("Введите название сборки", true);
+  if (packs.some(p => p.name.toLowerCase() === name.toLowerCase())) return toast("Сборка с таким названием уже есть", true);
+  const p = { id: "p" + Date.now(), name, mods: [], icon: iconSel, folder: accKey() + " - " + name }; // folder: своя папка игры у каждого аккаунта
+  if (src === "empty"){ p.mc = $("#pVer").value; p.loader = $("#pLoader").value }
+  else {
+    if (!mpPick) return toast("Выберите сборку Modrinth из списка", true);
+    Object.assign(p, { mc: mpPick.mc, loader: mpPick.loader, mrpack: { url: mpPick.url, sha1: mpPick.sha1, version: mpPick.version } });
+  }
+  packs.push(p); activeId = p.id; showMods = false; savePacks();
+  $("#pName").value = ""; mpPick = null; $("#mpPicked").textContent = "Сборка не выбрана";
+  renderPacks(); updateActiveInfo(); toast(`Сборка «${name}» создана`);
+};
+
+/* ───── Список и запуск сборок ───── */
+function renderPacks(){
+  $("#packsHeading").textContent = `Сборки аккаунта ${account.name}`;
+  const L = $("#packList");
+  L.innerHTML = packs.length ? packs.map(p => `
+    <div class="pack" aria-current="${p.id === activeId}">
+      <div class="row" style="align-items:center;flex-wrap:nowrap">${iconHtml(p.icon)}
+        <div><b>${esc(p.name)}</b><div class="meta">${esc(p.mc)} · ${LOADERS[p.loader]} · ${p.mrpack ? "Modrinth" : `файлов: ${p.mods.length}`}</div></div></div>
+      <div class="row"><button class="btn small" data-open="${p.id}">Открыть</button>
+      <button class="btn small danger" data-del="${p.id}" aria-label="Удалить сборку ${esc(p.name)}">Удалить</button></div>
+    </div>`).join("") : `<div class="empty">Сборок пока нет. Задайте название, выберите тип и нажмите «Создать сборку».</div>`;
+  const p = activePack(), M = $("#packMods");
+  $("#packJson").classList.add("hidden");
+  if (!p){ $("#packTitle").textContent = "Выберите сборку"; $("#packIcon").innerHTML = ""; $("#packActions").innerHTML = ""; M.innerHTML = ""; $("#notesBox").classList.add("hidden"); $("#gsBox").classList.add("hidden"); return }
+  $("#packIcon").innerHTML = iconHtml(p.icon);
+  $("#packTitle").textContent = `${p.name} · ${p.mc} · ${LOADERS[p.loader]}`;
+  $("#packActions").innerHTML = `<button class="btn primary big" id="btnPlay">Играть</button><button class="btn" id="btnMods" aria-expanded="${showMods}">Моды${p.mrpack ? "" : ` (${p.mods.length})`} ${showMods ? "▲" : "▼"}</button><button class="btn small" id="btnExport">Экспорт JSON</button>`;
+  M.classList.toggle("hidden", !showMods);
+  $("#notesBox").classList.remove("hidden");
+  if (notesFor !== p.id){ $("#packNote").value = p.notes || ""; notesFor = p.id }
+  renderTasks(p);
+  fillGs(p);
+  M.innerHTML = (p.mrpack ? `<div class="note" style="margin-bottom:8px">Готовая сборка Modrinth: ${esc(p.mrpack.version)}. Файлы скачаются при первом запуске.</div>` : "")
+    + (p.mods.length ? p.mods.map((m, i) => `
+    <div class="pm"><span><b>${esc(m.title)}</b> <span class="meta">${TYPE_NAME[m.type || "mod"]} · ${esc(m.version)}</span></span>
+    <button class="btn small danger" data-rm="${i}">Убрать</button></div>`).join("")
+    : `<div class="empty">Своих файлов нет. Откройте «Моды», «Шейдеры» или «Ресурспаки» и нажмите «В сборку».</div>`);
+}
+$("#packList").onclick = e => {
+  const o = e.target.closest("[data-open]"), d = e.target.closest("[data-del]");
+  if (o){ activeId = o.dataset.open; showMods = false; savePacks(); renderPacks(); updateActiveInfo(); $("#packDetail").scrollIntoView({ block: "nearest" }) }
+  if (d){ packs = packs.filter(p => p.id !== d.dataset.del); if (activeId === d.dataset.del) activeId = packs[0]?.id || null; savePacks(); renderPacks(); updateActiveInfo() }
+};
+$("#packMods").onclick = e => {
+  const r = e.target.closest("[data-rm]"); if (!r) return;
+  activePack().mods.splice(+r.dataset.rm, 1); savePacks(); renderPacks();
+};
+$("#packActions").onclick = e => {
+  const p = activePack(); if (!p) return;
+  if (e.target.id === "btnExport"){ const pre = $("#packJson"); pre.textContent = JSON.stringify(p, null, 2); pre.classList.toggle("hidden") }
+  if (e.target.id === "btnPlay") play(p);
+  if (e.target.id === "btnMods"){ showMods = !showMods; renderPacks() }
+};
+
+function showOverlay(t){ $("#ovStage").textContent = t; $("#ovBar").removeAttribute("value"); $("#ovText").textContent = ""; $("#overlay").classList.remove("hidden") }
+async function play(p){
+  if (!window.launcher?.play) return toast("Запуск игры работает только в приложении (exe)", true);
+  showOverlay("Подготовка…");
+  try {
+    const info = await window.launcher.play(JSON.parse(JSON.stringify(p)), account, skin);
+    if (info?.mc){ p.mc = info.mc; p.loader = info.loader; savePacks(); renderPacks() }
+    $("#overlay").classList.add("hidden"); toast("Игра запускается…");
+  } catch (e){ $("#overlay").classList.add("hidden"); toast(clean(e.message), true) }
+}
+window.launcher?.onGameProgress?.(({ stage, done, total }) => {
+  $("#ovStage").textContent = stage;
+  if (total){ $("#ovBar").max = total; $("#ovBar").value = done; $("#ovText").textContent = `${done} из ${total}` }
+  else { $("#ovBar").removeAttribute("value"); $("#ovText").textContent = "" }
+});
+window.launcher?.onGameExit?.(({ code, log }) => { if (code) toast(`Игра закрылась с ошибкой (код ${code}). Лог: ${log}`, true) });
+
+/* ───── Скин ───── */
+let skin = null; // { id, name, model: "classic"|"slim", data: dataURL }, свой у каждого аккаунта
+const skinKey = () => "skin:" + (account ? account.type + ":" + account.uuid : "none");
+let defaultSkins = null, loadingSkins = false;
+
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src });
+
+// Вид спереди: голова, шапка, тело, руки, ноги
+function drawSkin(canvas, img, model){
+  const c = canvas.getContext("2d"); c.imageSmoothingEnabled = false; c.clearRect(0, 0, 16, 32);
+  const aw = model === "slim" ? 3 : 4, legacy = img.height * 2 === img.width, k = img.width / 64;
+  const part = (sx, sy, w, h, dx, dy, flip) => {
+    if (flip){ c.save(); c.translate(dx + w, dy); c.scale(-1, 1); c.drawImage(img, sx * k, sy * k, w * k, h * k, 0, 0, w, h); c.restore() }
+    else c.drawImage(img, sx * k, sy * k, w * k, h * k, dx, dy, w, h);
+  };
+  part(8, 8, 8, 8, 4, 0);
+  part(20, 20, 8, 12, 4, 8);
+  part(44, 20, aw, 12, 4 - aw, 8);
+  part(legacy ? 44 : 36, legacy ? 20 : 52, aw, 12, 12, 8, legacy);
+  part(4, 20, 4, 12, 4, 20);
+  part(legacy ? 4 : 20, legacy ? 20 : 52, 4, 12, 8, 20, legacy);
+  part(40, 8, 8, 8, 4, 0);
+}
+
+async function renderSkins(){
+  $("#tab-skins").classList.toggle("locked", !plusInfo.plus);
+  if (!plusInfo.plus) return;
+  $("#skinName").textContent = skin ? skin.name : "Стандартный (по умолчанию)";
+  $("#skinInfo").textContent = skin ? (skin.model === "slim" ? "Тонкие руки" : "Классическая модель") : "Выберите готовый скин или загрузите свой";
+  $("#skinNote").textContent = account.type === "online"
+    ? "Аккаунт Microsoft: нажмите «Применить к аккаунту Microsoft», и скин сменится на серверах Mojang для всех игроков."
+    : "Офлайн-аккаунт: скин подставляется при запуске игры через ресурспак и виден только вам. Другие игроки на сервере его не увидят.";
+  $("#btnSkinUpload").classList.toggle("hidden", account.type !== "online" || !skin);
+  $("#btnSkinReset").classList.toggle("hidden", !skin);
+  $("#skinAuto").checked = V3.auto;
+  startViewer(); updateViewer(); loadCapes();
+  await loadDefaultSkins();
+  updateViewer();
+}
+
+async function loadDefaultSkins(){
+  const grid = $("#skinGrid");
+  if (!window.launcher?.getDefaultSkins){ grid.innerHTML = `<div class="empty">Готовые скины доступны только в приложении (exe).</div>`; return }
+  if (!defaultSkins){
+    if (loadingSkins) return;
+    loadingSkins = true;
+    grid.innerHTML = `<div class="empty">Загружаем скины из Minecraft… Если клиента игры ещё нет, он скачается (около 25 МБ).</div>`;
+    try { defaultSkins = await window.launcher.getDefaultSkins() }
+    catch (e){ grid.innerHTML = `<div class="empty">Не удалось загрузить скины: ${esc(clean(e.message))}</div>`; loadingSkins = false; return }
+    loadingSkins = false;
+  }
+  grid.innerHTML = defaultSkins.map(s => `<button type="button" class="skincard" data-sid="${esc(s.id)}" aria-current="${skin?.id === s.id}">
+    <canvas width="16" height="32"></canvas><b>${esc(s.name)}</b><span class="meta">${s.model === "slim" ? "тонкие руки" : "классика"}</span></button>`).join("");
+  grid.querySelectorAll(".skincard").forEach((b, i) => {
+    loadImg(defaultSkins[i].data).then(img => drawSkin(b.querySelector("canvas"), img, defaultSkins[i].model)).catch(() => {});
+  });
+}
+$("#skinGrid").onclick = e => {
+  const b = e.target.closest("[data-sid]"); if (!b) return;
+  const s = defaultSkins.find(x => x.id === b.dataset.sid);
+  skin = { id: s.id, name: s.name, model: s.model, data: s.data };
+  store.set(skinKey(), skin); renderSkins(); toast(`Выбран скин ${s.name}`);
+};
+async function importSkinFile(f){
+  if (!f) return;
+  if (f.size > 300 * 1024) return toast("Файл слишком большой", true);
+  const data = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f) }).catch(() => null);
+  if (!data || !data.startsWith("data:image/png")) return toast("Нужен PNG-файл", true);
+  const img = await loadImg(data).catch(() => null);
+  if (!img || img.width % 64 || !(img.height === img.width || img.height * 2 === img.width)) return toast("Нужен PNG 64×64 или 64×32", true);
+  const model = detectSlim(img) ? "slim" : "classic";
+  $("#skinModel").value = model;
+  skin = { id: "file", name: f.name.replace(/\.png$/i, ""), model, data };
+  store.set(skinKey(), skin); renderSkins(); toast("Скин загружен");
+}
+function detectSlim(img){
+  if (img.height * 2 === img.width) return false;
+  const k = img.width / 64, g = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+  let clear = 0;
+  for (const y of [22, 26, 30]){ g.clearRect(0, 0, 1, 1); g.drawImage(img, 47 * k, y * k, 1, 1, 0, 0, 1, 1); if (g.getImageData(0, 0, 1, 1).data[3] === 0) clear++ }
+  return clear === 3;
+}
+$("#btnSkinImport").onclick = () => $("#skinFile").click();
+$("#skinFile").onchange = e => { importSkinFile(e.target.files[0]); e.target.value = "" };
+$("#skinModel").onchange = () => { if (skin?.id === "file"){ skin.model = $("#skinModel").value; store.set(skinKey(), skin); renderSkins() } };
+$("#btnSkinReset").onclick = () => { skin = null; store.set(skinKey(), null); renderSkins(); toast("Скин сброшен") };
+$("#btnSkinUpload").onclick = async () => {
+  if (!skin) return;
+  if (!window.launcher?.uploadSkin) return toast("Загрузка работает только в приложении (exe)", true);
+  const b = $("#btnSkinUpload"); b.disabled = true;
+  try { await window.launcher.uploadSkin(skin.data, skin.model, account.uuid); toast("Скин применён к аккаунту Microsoft") }
+  catch (e){ toast(clean(e.message), true) }
+  b.disabled = false;
+};
+
+/* ───── v2.1: темы, анимации, окна ───── */
+let notesFor = null;
+$("#themeSel").value = store.get("theme", "oled");
+$("#themeSel").onchange = () => { document.documentElement.dataset.theme = $("#themeSel").value; store.set("theme", $("#themeSel").value) };
+
+// плавное появление карточек при прокрутке
+const io = "IntersectionObserver" in window
+  ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target) } }), { rootMargin: "0px 0px -5% 0px" })
+  : null;
+function reveal(root){
+  if (!io) return;
+  root.querySelectorAll(".mod:not(.reveal)").forEach(el => { el.classList.add("reveal"); io.observe(el) });
+}
+for (const id of ["#results", "#mpResults"]) new MutationObserver(() => reveal($(id))).observe($(id), { childList: true });
+
+// универсальное окно подтверждения
+let dlgResolve = null;
+function askModal({ title, body, ok = "Да", cancel = "Отмена" }){
+  $("#dlgTitle").textContent = title; $("#dlgBody").innerHTML = body;
+  $("#dlgYes").textContent = ok; $("#dlgNo").textContent = cancel || ""; $("#dlgNo").classList.toggle("hidden", !cancel);
+  $("#dlg").classList.remove("hidden"); $("#dlgYes").focus();
+  return new Promise(res => { dlgResolve = res });
+}
+function dlgDone(v){ $("#dlg").classList.add("hidden"); const r = dlgResolve; dlgResolve = null; if (r) r(v) }
+$("#dlgYes").onclick = () => dlgDone(true);
+$("#dlgNo").onclick = () => dlgDone(false);
+
+// быстрый выбор сборки
+function updateQuickBtn(){
+  const p = activePack();
+  $("#packQuick").innerHTML = p
+    ? `${iconHtml(p.icon)}<span class="qt"><b>${esc(p.name)}</b> <span class="chip">${esc(p.mc)}</span></span><span aria-hidden="true">▾</span>`
+    : `<span class="qt">Нет сборок</span><span aria-hidden="true">▾</span>`;
+}
+function renderPackModal(){
+  const modCount = p => p.mods.filter(m => (m.type || "mod") === "mod").length;
+  $("#pmList").innerHTML = packs.length ? packs.map(p => `
+    <div class="pmrow" aria-current="${p.id === activeId}">
+      ${iconHtml(p.icon)}
+      <div class="grow"><b>${esc(p.name)}</b> <span class="chip">${esc(p.mc)}</span>
+        <div class="meta">${LOADERS[p.loader]} · ${p.mrpack ? "сборка Modrinth" : `модов: ${modCount(p)}`}</div></div>
+      <button type="button" class="btn small" data-pmsel="${esc(p.id)}">Выбрать</button>
+      <button type="button" class="btn small primary" data-pmplay="${esc(p.id)}" aria-label="Играть: ${esc(p.name)}">▶ Играть</button>
+    </div>`).join("") : `<div class="empty">Сборок пока нет. Нажмите «Новая сборка».</div>`;
+}
+function openPackModal(){ renderPackModal(); $("#packModal").classList.remove("hidden"); $("#pmClose").focus() }
+function closePackModal(){ $("#packModal").classList.add("hidden"); $("#packQuick").focus() }
+$("#packQuick").onclick = openPackModal;
+$("#pmClose").onclick = closePackModal;
+$("#packModal").onclick = e => { if (e.target.id === "packModal") closePackModal() };
+$("#pmNew").onclick = () => { closePackModal(); openTab("packs") };
+$("#pmList").onclick = e => {
+  const sel = e.target.closest("[data-pmsel]"), pl = e.target.closest("[data-pmplay]");
+  if (sel){ activeId = sel.dataset.pmsel; savePacks(); updateActiveInfo(); updateQuickBtn(); renderPackModal(); search() }
+  if (pl){ activeId = pl.dataset.pmplay; savePacks(); closePackModal(); updateQuickBtn(); updateActiveInfo(); play(activePack()) }
+};
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if (!$("#dlg").classList.contains("hidden")) dlgDone(false);
+  else if (!$("#packModal").classList.contains("hidden")) closePackModal();
+});
+
+/* ───── заметки и задачи сборки ───── */
+$("#packNote").oninput = () => { const p = activePack(); if (p){ p.notes = $("#packNote").value; savePacks() } };
+function renderTasks(p){
+  const t = p.tasks || [];
+  $("#taskList").innerHTML = t.length ? t.map((x, i) => `
+    <div class="task ${x.done ? "done" : ""}"><input type="checkbox" data-tk="${i}" ${x.done ? "checked" : ""} aria-label="Выполнено">
+      <span style="flex:1">${esc(x.t)}</span>
+      <button type="button" class="btn small danger" data-tdel="${i}" aria-label="Удалить задачу">✕</button></div>`).join("")
+    : `<div class="meta">Задач пока нет.</div>`;
+}
+function addTask(){
+  const p = activePack(), v = $("#taskIn").value.trim();
+  if (!p || !v) return;
+  (p.tasks ||= []).push({ t: v, done: false }); $("#taskIn").value = ""; savePacks(); renderTasks(p);
+}
+$("#taskAdd").onclick = addTask;
+$("#taskIn").onkeydown = e => { if (e.key === "Enter") addTask() };
+$("#taskList").onchange = e => { const c = e.target.closest("[data-tk]"), p = activePack(); if (c && p){ p.tasks[+c.dataset.tk].done = c.checked; savePacks(); renderTasks(p) } };
+$("#taskList").onclick = e => { const d = e.target.closest("[data-tdel]"), p = activePack(); if (d && p){ p.tasks.splice(+d.dataset.tdel, 1); savePacks(); renderTasks(p) } };
+
+/* ───── настройки: Java и очистка ───── */
+const fmtBytes = b => b >= 1073741824 ? (b / 1073741824).toFixed(2) + " ГБ" : b >= 1048576 ? (b / 1048576).toFixed(1) + " МБ" : b >= 1024 ? Math.round(b / 1024) + " КБ" : b + " Б";
+function renderSettings(){ fillCleanSelect(); loadJava() }
+
+async function loadJava(){
+  const box = $("#javaList");
+  if (!window.launcher?.javaStatus){ box.innerHTML = `<div class="empty">Менеджер Java работает только в приложении (exe).</div>`; return }
+  box.innerHTML = `<div class="empty">Загружаем список…</div>`;
+  try {
+    const p = activePack(), st = await window.launcher.javaStatus(p ? p.mc : null);
+    const req = st.required && st.list.find(j => j.id === st.required.component);
+    $("#javaReq").textContent = p && st.required
+      ? `Для «${p.name}» (Minecraft ${p.mc}) нужна Java ${st.required.major}. ${req?.installed ? "Она уже установлена." : "Она ещё не установлена: лаунчер скачает её при запуске, либо нажмите «Скачать» ниже."}`
+      : "Выберите сборку, чтобы узнать нужную версию Java.";
+    box.innerHTML = st.list.map(j => `
+      <div class="pmrow ${st.required?.component === j.id ? "need" : ""}">
+        <div class="grow"><b>Java ${j.major}</b> <span class="chip">${esc(j.id)}</span>
+          <div class="meta">${esc(j.version)}${st.required?.component === j.id ? " · нужна этой сборке" : ""}</div></div>
+        ${j.installed ? `<span class="badge on">Установлена</span>` : `<button type="button" class="btn small primary" data-java="${esc(j.id)}">Скачать</button>`}
+      </div>`).join("");
+  } catch (e){ box.innerHTML = `<div class="empty">Не удалось получить список: ${esc(clean(e.message))}</div>` }
+}
+$("#btnJavaRefresh").onclick = loadJava;
+$("#javaList").onclick = async e => {
+  const b = e.target.closest("[data-java]"); if (!b) return;
+  showOverlay("Скачиваем Java…");
+  try { await window.launcher.javaInstall(b.dataset.java); toast("Java установлена") } catch (err){ toast(clean(err.message), true) }
+  $("#overlay").classList.add("hidden"); loadJava();
+};
+
+function fillCleanSelect(){
+  $("#cleanPack").innerHTML = packs.length ? packs.map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("") : `<option value="">Нет сборок</option>`;
+  if (activePack()) $("#cleanPack").value = activeId;
+}
+let scanData = null;
+$("#btnCleanScan").onclick = async () => {
+  const p = packs.find(x => x.id === $("#cleanPack").value);
+  if (!p) return toast("Сначала создайте сборку", true);
+  if (!window.launcher?.cleanScan) return toast("Очистка работает только в приложении (exe)", true);
+  try { scanData = await window.launcher.cleanScan(JSON.parse(JSON.stringify(p))); renderClean() } catch (e){ toast(clean(e.message), true) }
+};
+function renderClean(){
+  const total = scanData.reduce((a, c) => a + c.bytes, 0);
+  $("#cleanList").innerHTML = `<div class="meta">Всего можно освободить: ${fmtBytes(total)}</div>` + scanData.map(c => `
+    <label class="check"><input type="checkbox" data-cat="${esc(c.id)}" ${c.safe && c.count ? "checked" : ""} ${c.count ? "" : "disabled"}>
+      <span><b>${esc(c.title)}</b> <span class="meta">${fmtBytes(c.bytes)} · файлов: ${c.count}</span><br><span class="meta">${esc(c.hint)}</span></span></label>`).join("");
+  $("#btnCleanRun").classList.toggle("hidden", !scanData.some(c => c.count));
+}
+$("#btnCleanRun").onclick = async () => {
+  const p = packs.find(x => x.id === $("#cleanPack").value);
+  const cats = [...$("#cleanList").querySelectorAll("[data-cat]:checked")].map(x => x.dataset.cat);
+  if (!p || !cats.length) return toast("Отметьте, что удалить", true);
+  try { const r = await window.launcher.cleanRun(JSON.parse(JSON.stringify(p)), cats); toast(`Освобождено: ${fmtBytes(r.freed)}`); $("#btnCleanScan").click() }
+  catch (e){ toast(clean(e.message), true) }
+};
+
+/* ───── датчики ЦП и ОЗУ ───── */
+if (window.launcher?.onMonitor){
+  window.launcher.onMonitor(m => {
+    $("#monCpu").textContent = m.cpu + "%"; $("#monCpuBar").style.width = m.cpu + "%";
+    $("#monRam").textContent = `${(m.ramUsedMB / 1024).toFixed(1)} из ${(m.ramTotalMB / 1024).toFixed(0)} ГБ`;
+    $("#monRamBar").style.width = Math.round(100 * m.ramUsedMB / m.ramTotalMB) + "%";
+    $("#monGame").textContent = m.gameMB != null ? `Игра: ${(m.gameMB / 1024).toFixed(2)} ГБ ОЗУ` : "Игра не запущена";
+  });
+} else $("#mon").classList.add("hidden");
+
+/* ───── 3D-просмотр скина ───── */
+/*BOXFACES*/
+function boxFaces(hw, hh, hd){
+  return [
+    { n: [0, 0, 1],  t: "front",  c: [[-hw, hh, hd], [hw, hh, hd], [-hw, -hh, hd]] },
+    { n: [0, 0, -1], t: "back",   c: [[hw, hh, -hd], [-hw, hh, -hd], [hw, -hh, -hd]] },
+    { n: [-1, 0, 0], t: "right",  c: [[-hw, hh, -hd], [-hw, hh, hd], [-hw, -hh, -hd]] },
+    { n: [1, 0, 0],  t: "left",   c: [[hw, hh, hd], [hw, hh, -hd], [hw, -hh, hd]] },
+    { n: [0, 1, 0],  t: "top",    c: [[-hw, hh, -hd], [hw, hh, -hd], [-hw, hh, hd]] },
+    { n: [0, -1, 0], t: "bottom", c: [[-hw, -hh, hd], [hw, -hh, hd], [-hw, -hh, -hd]] },
+  ];
+}
+function texRects(u, v, w, h, d){
+  return { top: [u + d, v, w, d], bottom: [u + d + w, v, w, d], right: [u, v + d, d, h], front: [u + d, v + d, w, h], left: [u + d + w, v + d, d, h], back: [u + 2 * d + w, v + d, w, h] };
+}
+/*END*/
+const V3 = { yaw: 0.5, pitch: 0.12, tex: null, k: 1, cape: null, capeK: 1, model: "classic",
+  auto: store.get("skinAuto", !matchMedia("(prefers-reduced-motion: reduce)").matches), drag: null, dirty: true, raf: 0 };
+
+// старые скины 64×32 приводим к 64×64 (левые руки и ноги — зеркало правых)
+function normalizeSkin(img){
+  const k = img.width / 64, c = document.createElement("canvas");
+  c.width = img.width; c.height = 64 * k;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0);
+  if (img.height * 2 === img.width){
+    const rel = { top: [4, 0], bottom: [8, 0], right: [0, 4], front: [4, 4], left: [8, 4], back: [12, 4] };
+    const faces = [["top", 4, 4, "top"], ["bottom", 4, 4, "bottom"], ["right", 4, 12, "left"], ["front", 4, 12, "front"], ["left", 4, 12, "right"], ["back", 4, 12, "back"]];
+    for (const [dx0, dy0, sx0, sy0] of [[16, 48, 0, 16], [32, 48, 40, 16]])
+      for (const [f, w, h, df] of faces){
+        g.save(); g.translate((dx0 + rel[df][0] + w) * k, (dy0 + rel[df][1]) * k); g.scale(-1, 1);
+        g.drawImage(img, (sx0 + rel[f][0]) * k, (sy0 + rel[f][1]) * k, w * k, h * k, 0, 0, w * k, h * k); g.restore();
+      }
+  }
+  return c;
+}
+async function setViewerSkin(data, model){ const img = await loadImg(data); V3.tex = normalizeSkin(img); V3.k = V3.tex.width / 64; V3.model = model; V3.dirty = true }
+async function setViewerCape(data){
+  if (!data) V3.cape = null; else { const img = await loadImg(data); V3.cape = img; V3.capeK = img.width / 64 }
+  V3.dirty = true;
+}
+async function updateViewer(){
+  const steve = defaultSkins?.find(s => s.name === "Steve" && s.model === "classic") || defaultSkins?.find(s => s.name === "Steve");
+  const src = skin || steve;
+  if (src) await setViewerSkin(src.data, src.model).catch(() => {}); else { V3.tex = null; V3.dirty = true }
+}
+function buildParts(){
+  const aw = V3.model === "slim" ? 3 : 4, T = V3.tex, k = V3.k;
+  const mk = (cx, cy, cz, w, h, d, u, v, grow = 0) => ({ cx, cy, cz, w, h, d, u, v, grow, img: T, k, rot180: false });
+  const parts = [
+    { c: [0, 28, 0], boxes: [mk(0, 28, 0, 8, 8, 8, 0, 0), mk(0, 28, 0, 8, 8, 8, 32, 0, 0.5)] },
+    { c: [0, 18, 0], boxes: [mk(0, 18, 0, 8, 12, 4, 16, 16), mk(0, 18, 0, 8, 12, 4, 16, 32, 0.25)] },
+    { c: [-(4 + aw / 2), 18, 0], boxes: [mk(-(4 + aw / 2), 18, 0, aw, 12, 4, 40, 16), mk(-(4 + aw / 2), 18, 0, aw, 12, 4, 40, 32, 0.25)] },
+    { c: [4 + aw / 2, 18, 0], boxes: [mk(4 + aw / 2, 18, 0, aw, 12, 4, 32, 48), mk(4 + aw / 2, 18, 0, aw, 12, 4, 48, 48, 0.25)] },
+    { c: [-2, 6, 0], boxes: [mk(-2, 6, 0, 4, 12, 4, 0, 16), mk(-2, 6, 0, 4, 12, 4, 0, 32, 0.25)] },
+    { c: [2, 6, 0], boxes: [mk(2, 6, 0, 4, 12, 4, 16, 48), mk(2, 6, 0, 4, 12, 4, 0, 48, 0.25)] },
+  ];
+  if (V3.cape) parts.push({ c: [0, 16, -2.5], boxes: [{ cx: 0, cy: 16, cz: -2.5, w: 10, h: 16, d: 1, u: 0, v: 0, grow: 0, img: V3.cape, k: V3.capeK, rot180: true }] });
+  return parts;
+}
+function drawBox(g, proj, rot, s){
+  const hw = s.w / 2 + s.grow, hh = s.h / 2 + s.grow, hd = s.d / 2 + s.grow, m = s.rot180 ? -1 : 1;
+  const tx = texRects(s.u, s.v, s.w, s.h, s.d);
+  for (const f of boxFaces(hw, hh, hd)){
+    if (rot(f.n[0] * m, f.n[1], f.n[2] * m)[2] <= 0.001) continue; // грань смотрит от нас
+    const [P0, P1, P2] = f.c.map(q => proj([s.cx + q[0] * m, s.cy + q[1], s.cz + q[2] * m]));
+    const [sx, sy, sw, sh] = tx[f.t].map(v => v * s.k);
+    if (sw <= 0 || sh <= 0) continue;
+    const a = (P1.x - P0.x) / sw, b = (P1.y - P0.y) / sw, c = (P2.x - P0.x) / sh, d = (P2.y - P0.y) / sh;
+    g.setTransform(a, b, c, d, P0.x - a * sx - c * sy, P0.y - b * sx - d * sy);
+    g.drawImage(s.img, sx, sy, sw, sh, sx, sy, sw, sh);
+  }
+}
+function render3D(){
+  const cv = $("#skin3d"), g = cv.getContext("2d");
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+  if (!V3.tex) return;
+  g.imageSmoothingEnabled = false;
+  const cy = Math.cos(V3.yaw), sy = Math.sin(V3.yaw), cp = Math.cos(V3.pitch), sp = Math.sin(V3.pitch), S = cv.height / 40;
+  const rot = (x, y, z) => { const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cp - z1 * sp, y * sp + z1 * cp] };
+  const proj = q => { const r = rot(q[0], q[1] - 16, q[2]); return { x: cv.width / 2 + r[0] * S, y: cv.height / 2 - r[1] * S } };
+  const parts = buildParts();
+  parts.forEach(p => { p.depth = rot(p.c[0], p.c[1] - 16, p.c[2])[2] });
+  parts.sort((a, b) => a.depth - b.depth); // дальние части рисуем первыми
+  for (const p of parts) for (const b of p.boxes) drawBox(g, proj, rot, b);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+function viewerLoop(){
+  if (tab !== "skins" || document.hidden){ V3.raf = 0; return }
+  if (V3.auto && !V3.drag){ V3.yaw += 0.012; V3.dirty = true }
+  if (V3.dirty){ V3.dirty = false; render3D() }
+  V3.raf = requestAnimationFrame(viewerLoop);
+}
+function startViewer(){ if (!V3.raf) V3.raf = requestAnimationFrame(viewerLoop) }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && tab === "skins") startViewer() });
+
+const cv3 = $("#skin3d");
+cv3.onpointerdown = e => { V3.drag = { x: e.clientX, y: e.clientY, yaw: V3.yaw, pitch: V3.pitch }; cv3.setPointerCapture(e.pointerId); cv3.style.cursor = "grabbing" };
+cv3.onpointermove = e => {
+  if (!V3.drag) return;
+  V3.yaw = V3.drag.yaw + (e.clientX - V3.drag.x) * 0.01;
+  V3.pitch = Math.max(-1.2, Math.min(1.2, V3.drag.pitch + (e.clientY - V3.drag.y) * 0.01));
+  V3.dirty = true;
+};
+cv3.onpointerup = cv3.onpointercancel = () => { V3.drag = null; cv3.style.cursor = "grab" };
+cv3.ondragover = e => { e.preventDefault(); cv3.classList.add("drop") };
+cv3.ondragleave = () => cv3.classList.remove("drop");
+cv3.ondrop = e => { e.preventDefault(); cv3.classList.remove("drop"); importSkinFile(e.dataTransfer.files[0]) };
+$("#skinAuto").onchange = () => { V3.auto = $("#skinAuto").checked; store.set("skinAuto", V3.auto) };
+
+/* плащи (аккаунт Microsoft) */
+let capes = [], capeSel = null;
+async function loadCapes(){
+  const box = $("#capeBox");
+  if (account.type !== "online" || !window.launcher?.getCapes){ box.classList.add("hidden"); setViewerCape(null); return }
+  box.classList.remove("hidden");
+  try { capes = await window.launcher.getCapes(account.uuid) }
+  catch (e){ capes = []; $("#capeList").innerHTML = `<span class="meta">Не удалось получить плащи: ${esc(clean(e.message))}</span>`; setViewerCape(null); return }
+  capeSel = capes.find(c => c.active)?.id ?? null;
+  drawCapeList(); setViewerCape(capes.find(c => c.id === capeSel)?.data || null);
+}
+function drawCapeList(){
+  $("#capeList").innerHTML = [{ id: null, alias: "Без плаща" }, ...capes].map(c =>
+    `<button type="button" class="btn small" data-cape="${esc(c.id ?? "")}" aria-pressed="${c.id === capeSel}">${esc(c.alias)}</button>`).join("")
+    + (capes.length ? "" : `<span class="meta">У аккаунта нет плащей</span>`);
+}
+$("#capeList").onclick = e => {
+  const b = e.target.closest("[data-cape]"); if (!b) return;
+  capeSel = b.dataset.cape || null; drawCapeList(); setViewerCape(capes.find(c => c.id === capeSel)?.data || null);
+};
+$("#btnCapeApply").onclick = async () => {
+  try { await window.launcher.setCape(account.uuid, capeSel); toast("Плащ применён к аккаунту") } catch (e){ toast(clean(e.message), true) }
+};
+
+/* ───── PlyPrismLauncher+ ───── */
+let plusInfo = { plus: false, via: null };
+async function refreshPlus(){
+  try { plusInfo = window.launcher?.plusStatus ? await window.launcher.plusStatus() : { plus: false, via: null } }
+  catch { plusInfo = { plus: false, via: null } }
+  $("#plusMark").textContent = plusInfo.plus ? "+" : "";
+  $("#plusState").textContent = plusInfo.plus
+    ? (plusInfo.via === "developer" ? "Активна: аккаунт разработчика." : "Активна: код принят.")
+    : "Не активна. Введите код ниже.";
+  if (tab === "skins") renderSkins();
+  const p = activePack(); if (p && tab === "packs") fillGs(p);
+}
+$("#btnPlusActivate").onclick = async () => {
+  if (!window.launcher?.plusActivate) return toast("Активация работает только в приложении (exe)", true);
+  try { await window.launcher.plusActivate($("#plusCode").value); $("#plusCode").value = ""; await refreshPlus(); toast("PlyPrismLauncher+ активирован") }
+  catch (e){ toast(clean(e.message), true) }
+};
+$("#btnSkinLock").onclick = () => openTab("settings");
+$("#btnAiKey").onclick = async () => {
+  if (!window.launcher?.aiSetKey) return toast("Работает только в приложении (exe)", true);
+  try { await window.launcher.aiSetKey($("#aiKey").value); $("#aiKey").value = ""; toast("Ключ сохранён"); refreshAiQuota() }
+  catch (e){ toast(clean(e.message), true) }
+};
+
+/* ───── игровые настройки сборки ───── */
+function fillGs(p){
+  $("#gsBox").classList.remove("hidden");
+  const s = p.settings || {};
+  $("#gsRdOn").checked = Number.isInteger(s.renderDistance);
+  $("#gsRd").value = s.renderDistance || 12; $("#gsRdVal").textContent = $("#gsRd").value;
+  $("#gsFb").checked = !!s.fullbright && plusInfo.plus;
+  $("#gsFbTag").classList.toggle("hidden", plusInfo.plus);
+}
+function saveGs(){
+  const p = activePack(); if (!p) return;
+  p.settings = { renderDistance: $("#gsRdOn").checked ? +$("#gsRd").value : null, fullbright: $("#gsFb").checked };
+  savePacks();
+}
+$("#gsRdOn").onchange = saveGs;
+$("#gsRd").oninput = () => { $("#gsRdVal").textContent = $("#gsRd").value; saveGs() };
+$("#gsFb").onchange = () => {
+  if (!plusInfo.plus){ $("#gsFb").checked = false; return toast("Полная яркость доступна в PlyPrismLauncher+. Код в Telegram: t.me/clevi01", true) }
+  saveGs();
+};
+
+/* ───── друзья ───── */
+const friendsKey = () => "friends:" + accKey();
+function renderFriends(){
+  const list = store.get(friendsKey(), []).sort((a, b) => a.name.localeCompare(b.name));
+  $("#frList").innerHTML = list.length ? list.map((f, i) => `
+    <div class="pmrow"><div class="pic" style="background:${PAL[i % PAL.length]}">${esc(f.name[0].toUpperCase())}</div>
+      <div class="grow"><b>${esc(f.name)}</b><div class="meta">${esc(f.note || "без заметки")}</div></div>
+      <button type="button" class="btn small" data-frcopy="${esc(f.name)}">Копировать ник</button>
+      <button type="button" class="btn small danger" data-frdel="${esc(f.name)}" aria-label="Убрать друга ${esc(f.name)}">✕</button></div>`).join("")
+    : `<div class="empty">Друзей пока нет. Добавьте ник игрока выше.</div>`;
+}
+function addFriend(){
+  const name = $("#frName").value.trim(), note = $("#frNote").value.trim();
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) return toast("Ник: 3–16 символов, латиница, цифры и _", true);
+  const list = store.get(friendsKey(), []);
+  if (list.some(f => f.name.toLowerCase() === name.toLowerCase())) return toast("Этот игрок уже в списке", true);
+  list.push({ name, note, added: Date.now() }); store.set(friendsKey(), list);
+  $("#frName").value = ""; $("#frNote").value = ""; renderFriends(); toast(`${name} добавлен в друзья`);
+}
+$("#frAdd").onclick = addFriend;
+$("#frName").onkeydown = $("#frNote").onkeydown = e => { if (e.key === "Enter") addFriend() };
+$("#frList").onclick = e => {
+  const c = e.target.closest("[data-frcopy]"), d = e.target.closest("[data-frdel]");
+  if (c) navigator.clipboard?.writeText(c.dataset.frcopy).then(() => toast("Ник скопирован"), () => toast("Не удалось скопировать", true));
+  if (d){ store.set(friendsKey(), store.get(friendsKey(), []).filter(f => f.name !== d.dataset.frdel)); renderFriends() }
+};
+
+/* ───── ИИ-помощник ───── */
+let aiMsgs = [], aiView = [];
+const planHtml = (p, i) => `<div class="plan"><b>${esc(p.name)}</b> <span class="chip">${esc(p.mc)}</span> <span class="chip">${LOADERS[p.loader]}</span>
+  <div class="meta">Моды: ${p.mods.map(esc).join(", ") || "—"}${p.shaders.length ? `<br>Шейдеры: ${p.shaders.map(esc).join(", ")}` : ""}${p.resourcepacks.length ? `<br>Ресурспаки: ${p.resourcepacks.map(esc).join(", ")}` : ""}</div>
+  <button type="button" class="btn small primary" data-plan="${i}" style="margin-top:8px">Создать сборку</button></div>`;
+function drawAi(){
+  $("#aiLog").innerHTML = aiView.length
+    ? aiView.map((m, i) => `<div class="msg ${m.role}">${esc(m.text)}${m.plan ? planHtml(m.plan, i) : ""}</div>`).join("")
+    : `<div class="empty">Опишите, какую сборку хотите: версию, стиль игры, нужны ли шейдеры. ИИ подберёт моды с Modrinth, а вы подтвердите создание.</div>`;
+  $("#aiLog").scrollTop = $("#aiLog").scrollHeight;
+}
+async function refreshAiQuota(){
+  if (!window.launcher?.aiStatus){ $("#aiQuota").textContent = "ИИ работает только в приложении (exe)."; return }
+  try {
+    const s = await window.launcher.aiStatus();
+    $("#aiQuota").textContent = `Сообщений сегодня: ${s.used} из ${s.limit}${s.plus ? " (PlyPrismLauncher+)" : ". В PlyPrismLauncher+ лимит больше"}.`
+      + (s.hasKey ? "" : " Ключ Claude API не задан: добавьте его в «Настройках».");
+  } catch (e){ $("#aiQuota").textContent = clean(e.message) }
+}
+function renderAi(){ drawAi(); refreshAiQuota() }
+async function aiSend(){
+  const text = $("#aiIn").value.trim();
+  if (!text) return;
+  if (!window.launcher?.aiChat) return toast("ИИ работает только в приложении (exe)", true);
+  aiMsgs.push({ role: "user", content: text }); aiView.push({ role: "user", text }); $("#aiIn").value = "";
+  aiView.push({ role: "assistant", text: "Думаю…" }); drawAi();
+  $("#aiSend").disabled = true;
+  try {
+    const r = await window.launcher.aiChat(aiMsgs.slice(-12), activePack()?.mc || "");
+    aiMsgs.push({ role: "assistant", content: r.raw || r.reply });
+    aiView[aiView.length - 1] = { role: "assistant", text: r.reply || "Готово.", plan: r.pack };
+  } catch (e){
+    aiMsgs.pop(); aiView.splice(-2, 2); toast(clean(e.message), true); $("#aiIn").value = text;
+  }
+  $("#aiSend").disabled = false; drawAi(); refreshAiQuota();
+}
+$("#aiSend").onclick = aiSend;
+$("#aiIn").onkeydown = e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); aiSend() } };
+
+// Ищем проект по slug, а если не нашли, через поиск (так ИИ не может подсунуть чужие ссылки)
+async function resolveProject(q, type, p){
+  try {
+    const r = await fetch(`${API}/project/${encodeURIComponent(q)}`);
+    if (r.ok){ const j = await r.json(); if (j.project_type === type) return { id: j.id, title: j.title, icon: j.icon_url || "" } }
+  } catch {}
+  const facets = [[`project_type:${type}`], [`versions:${p.mc}`]];
+  if (type === "mod") facets.push([`categories:${p.loader}`]);
+  try {
+    const r = await fetch(`${API}/search?query=${encodeURIComponent(q)}&limit=1&facets=${encodeURIComponent(JSON.stringify(facets))}`);
+    const { hits } = await r.json();
+    if (hits[0]) return { id: hits[0].project_id, title: hits[0].title, icon: hits[0].icon_url || "" };
+  } catch {}
+  return null;
+}
+async function buildFromPlan(plan){
+  if (![...$("#pVer").options].some(o => o.value === plan.mc)) throw new Error(`Версия Minecraft ${plan.mc} недоступна на Modrinth`);
+  let name = plan.name, n = 1;
+  while (packs.some(x => x.name.toLowerCase() === name.toLowerCase())) name = `${plan.name} ${++n}`;
+  const p = { id: "p" + Date.now(), name, mc: plan.mc, loader: plan.loader, mods: [], icon: { t: "e", v: "🤖" }, folder: accKey() + " - " + name };
+  const groups = [["mod", plan.mods], ["shader", plan.shaders], ["resourcepack", plan.resourcepacks]];
+  const total = groups.reduce((a, g) => a + g[1].length, 0);
+  let done = 0; const missing = [], skipped = [];
+  for (const [type, list] of groups) for (const q of list){
+    $("#ovStage").textContent = "ИИ собирает сборку…"; $("#ovText").textContent = `${++done} из ${total}: ${q}`;
+    const pr = await resolveProject(q, type, p);
+    if (!pr){ missing.push(q); continue }
+    if (p.mods.some(m => m.projectId === pr.id)) continue;
+    try {
+      const vs = await fetchVersions(p, pr.id, type);
+      if (!vs.length){ missing.push(pr.title); continue }
+      const item = await toItem(type, pr.id, pr.title, pr.icon, vs[0]);
+      const c = findConflicts(p, item);
+      if (c.length){ skipped.push(c[0]); continue }
+      p.mods.push(item);
+    } catch { missing.push(pr.title) }
+  }
+  let deps = 0;
+  for (const m of p.mods.filter(x => x.type === "mod")){
+    $("#ovText").textContent = `Зависимости: ${m.title}`;
+    const { found } = await missingDeps(p, m);
+    for (const d of found) if (!p.mods.some(x => x.projectId === d.projectId)){ p.mods.push(d); deps++ }
+  }
+  packs.push(p); activeId = p.id; showMods = false; savePacks(); updateQuickBtn(); updateActiveInfo();
+  const summary = `Сборка «${name}» создана: ${p.mods.length - deps} шт. и ${deps} зависимостей.`
+    + (missing.length ? ` Не нашлось для ${plan.mc} / ${LOADERS[plan.loader]}: ${missing.join(", ")}.` : "")
+    + (skipped.length ? ` Пропущено из-за конфликтов: ${skipped.join("; ")}.` : "")
+    + " Откройте вкладку «Сборки» и нажмите «Играть».";
+  return { name, summary };
+}
+$("#aiLog").onclick = async e => {
+  const b = e.target.closest("[data-plan]"); if (!b) return;
+  b.disabled = true; showOverlay("ИИ собирает сборку…");
+  try {
+    const r = await buildFromPlan(aiView[+b.dataset.plan].plan);
+    $("#overlay").classList.add("hidden");
+    aiView.push({ role: "assistant", text: r.summary }); drawAi(); toast(`Сборка «${r.name}» создана`);
+  } catch (err){ $("#overlay").classList.add("hidden"); toast(clean(err.message), true) }
+  b.disabled = false;
+};
+
+/* ───── Отрисовка ───── */
+function render(){
+  const showAuth = !account || adding;
+  $("#auth").classList.toggle("hidden", !showAuth);
+  $("#app").classList.toggle("hidden", showAuth);
+  $("#btnAuthCancel").classList.toggle("hidden", !(adding && account));
+  if (showAuth) return;
+  renderAccounts();
+  skin = store.get(skinKey(), store.get("skin", null)); // у каждого аккаунта свой скин
+  loadPacks();
+  $("#uName").textContent = account.name;
+  $("#uBadge").textContent = (account.type === "online" ? "Онлайн · Microsoft" : "Офлайн · Google") + (account.developer ? " · Разработчик" : "");
+  $("#uBadge").className = "badge " + (account.type === "online" ? "on" : "off");
+  $("#uUuid").textContent = account.uuid;
+  openTab(tab);
+}
+
+const init = async () => {
+  // Интерфейс рисуем сразу, не дожидаясь сети: иначе при медленном Modrinth
+  // окно долго остаётся пустым (выглядит как чёрный экран).
+  try { buildIconPicker() } catch (e) { console.error("Ошибка иконок:", e) }
+  try { render() } catch (e) { console.error("Ошибка отрисовки интерфейса:", e) }
+  try { loadVersions() } catch (e) { console.error("Ошибка списка версий:", e) }
+  try { await refreshPlus() } catch (e) { console.error("Ошибка PlyPrismLauncher+:", e) }
+};
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{
+  "name": "plyprismlauncher",
+  "version": "2.1.0",
+  "description": "PlyPrismLauncher 2.1: темы, быстрый выбор сборки, зависимости модов, 3D-скин, очистка, менеджер Java",
+  "main": "main.js",
+  "author": "you",
+  "license": "LICENSED",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "msmc": "^5.0.0",
+    "adm-zip": "^0.5.16"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.plyprism.launcher",
+    "productName": "PlyPrismLauncher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "launcher.js",
+      "config.js",
+      "need.html",
+      "package.json"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "PlyPrismLauncher-${version}.exe"
+    }
+  }
+}
